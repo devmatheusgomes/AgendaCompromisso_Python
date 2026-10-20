@@ -13,6 +13,9 @@ Você abre o app e usa como tela inicial.
   cartão com capa, título, artista, progresso e botões anterior / tocar-pausar / próxima. Ele usa a Media Controller
   API do Tizen e só funciona com apps que publicam essas informações para o sistema.
 - Sem internet, o launcher mostra a última foto e o último clima salvos.
+- **Modo leve** (ligado por padrão): sem desfoque de vidro e sombras, para ficar mais fluido na TV.
+
+Para abrir o launcher ao ligar a TV, limpar a memória e remover apps, veja o [OTIMIZACAO.md](OTIMIZACAO.md).
 
 ## Controles
 

@@ -86,7 +86,7 @@
     ];
 
     var STORE_KEY = 'minilauncher.v2';
-    var state = { theme: 'grafite', favorites: [], wallpaper: 'bing' };
+    var state = { theme: 'grafite', favorites: [], wallpaper: 'bing', light: true };
 
     var installed = [];   // [{id, name, icon}]
     var zone = 'row';     // 'top' | 'row'
@@ -108,6 +108,7 @@
                 state.theme = saved.theme || state.theme;
                 state.favorites = saved.favorites || [];
                 state.wallpaper = saved.wallpaper || state.wallpaper;
+                if (typeof saved.light === 'boolean') state.light = saved.light;
             }
         } catch (e) { /* começa com o padrão */ }
     }
@@ -262,17 +263,22 @@
         });
     }
 
+    var rowKey = null;   // ids dos cartões já montados na faixa
+
     function renderRow() {
         var row = $('row');
         var list = favorites();
         if (focusIndex >= list.length) focusIndex = Math.max(0, list.length - 1);
-        row.innerHTML = '';
-        list.forEach(function (app, i) {
-            var t = makeTile(app);
-            if (zone === 'row' && i === focusIndex) t.classList.add('focus');
-            if (moving && i === focusIndex) t.classList.add('moving');
-            row.appendChild(t);
-        });
+        var key = list.map(function (a) { return a.id; }).join('|');
+        if (key !== rowKey) {
+            rowKey = key;
+            row.innerHTML = '';
+            list.forEach(function (app) { row.appendChild(makeTile(app)); });
+        }
+        for (var i = 0; i < row.children.length; i++) {
+            row.children[i].classList.toggle('focus', zone === 'row' && i === focusIndex);
+            row.children[i].classList.toggle('moving', moving && i === focusIndex);
+        }
         // rola a faixa quando há mais cartões do que cabem (6 visíveis)
         var shift = Math.max(0, focusIndex - 5) * (250 + 34);
         row.style.transform = 'translateX(' + (-shift) + 'px)';
@@ -336,6 +342,7 @@
         var hidden = state.favorites.filter(function (id) { return visible.indexOf(id) < 0; });
         state.favorites = visible.concat(hidden);
         focusIndex = b;
+        rowKey = null;
     }
 
     // ---------- Player de mídia ----------
@@ -420,6 +427,10 @@
 
         var btns = [null, MEDIA_SVG.prev, m.state === 'PLAY' ? MEDIA_SVG.pause : MEDIA_SVG.play, MEDIA_SVG.next];
         var row = $('m-btns');
+        var sig = m.state + zone + mediaIndex;
+        box.classList.toggle('focus-open', zone === 'media' && mediaIndex === 0);
+        if (row.getAttribute('data-sig') === sig) return;
+        row.setAttribute('data-sig', sig);
         row.innerHTML = '';
         for (var i = 1; i < btns.length; i++) {
             var d = document.createElement('div');
@@ -452,17 +463,18 @@
     }
 
     // ---------- Todos os apps ----------
-    function renderAll() {
+    function buildAll() {
         var grid = $('grid');
         grid.innerHTML = '';
         var inner = document.createElement('div');
         inner.className = 'inner';
-        installed.forEach(function (app, i) {
-            var t = makeTile(app);
-            if (i === gridIndex) t.classList.add('focus');
-            inner.appendChild(t);
-        });
+        installed.forEach(function (app) { inner.appendChild(makeTile(app)); });
         grid.appendChild(inner);
+    }
+    function renderAll() {
+        var inner = $('grid').firstChild;
+        if (!inner) return;
+        for (var i = 0; i < inner.children.length; i++) inner.children[i].classList.toggle('focus', i === gridIndex);
         var rowH = 140 + 40, visibleRows = 4;
         var r = Math.floor(gridIndex / GRID_COLS);
         inner.style.transform = 'translateY(' + (-Math.max(0, r - visibleRows + 1) * rowH) + 'px)';
@@ -481,6 +493,7 @@
     }
     function openAll() {
         view = 'all'; gridIndex = 0;
+        buildAll();
         renderAll();
         $('all').classList.remove('hidden');
     }
@@ -501,6 +514,9 @@
                 while (WALLPAPERS[i].id !== state.wallpaper) i++;
                 state.wallpaper = WALLPAPERS[(i + 1) % WALLPAPERS.length].id;
                 save(); applyWallpaper();
+            } },
+            { name: 'Modo leve: ' + (state.light ? 'ligado' : 'desligado'), run: function () {
+                state.light = !state.light; save(); applyTheme();
             } },
             { name: 'Atualizar clima', run: function () { loadWeather(true); } },
             { name: 'Fechar launcher', run: function () {
@@ -600,6 +616,7 @@
         pollMedia();
         $('panel').classList.add('hidden');
         $('all').classList.add('hidden');
+        $('grid').innerHTML = '';
         renderRow();
     }
 
@@ -607,6 +624,7 @@
     function applyTheme() {
         document.body.className = document.body.className.replace(/theme-\S+/g, '').trim();
         document.body.classList.add('theme-' + state.theme);
+        document.body.classList.toggle('light', state.light);
     }
 
     function showWallpaper(url, title, credit) {

@@ -218,3 +218,10 @@ header {
     opacity: 0; transition: opacity .25s ease, transform .25s ease;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Modo leve: sem desfoque e sombras (mais fluido em TVs mais simples) ---------- */
+.light .glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(18, 20, 24, .72); }
+.light .overlay { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(8, 9, 11, .96); }
+.light .tile, .light .tile.focus { box-shadow: none; }
+.light header { text-shadow: none; }
+.light .m-fill { transition: none; }
