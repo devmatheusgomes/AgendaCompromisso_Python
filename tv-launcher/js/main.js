@@ -173,47 +173,71 @@
     }
 
     var customIcon = {};   // id -> existe icons/<id>.png?
+    var resolved = {};     // id -> imagem que funcionou ({url, full}) ou null (usa texto)
 
-    function makeTile(app) {
-        var t = document.createElement('div');
+    // Texto com as cores da marca: só aparece se a TV não fornecer o ícone do app
+    function wordmark(t, app) {
         var b = brandOf(app.name);
+        t.innerHTML = '';
         if (b) {
-            t.className = 'tile';
+            t.className = t.className.replace(' generic', '');
             t.style.background = b.bg;
-            if (b.badge === 'yt') {
-                var badge = document.createElement('div');
-                badge.className = 'yt-badge';
-                t.appendChild(badge);
-            }
+            if (b.badge === 'yt') t.insertAdjacentHTML('beforeend', '<div class="yt-badge"></div>');
             var w = document.createElement('div');
             w.className = 'word' + (b.size ? ' ' + b.size : '');
             w.style.color = b.fg;
             w.textContent = b.text;
             t.appendChild(w);
         } else {
-            // App sem marca cadastrada: ícone do próprio app (vindo da TV) + nome
-            t.className = 'tile generic';
-            if (app.icon) {
-                var ic = document.createElement('img');
-                ic.className = 'app-icon';
-                ic.src = app.icon;
-                t.appendChild(ic);
-            } else {
-                t.insertAdjacentHTML('beforeend', SVG.play);
-            }
+            t.className += ' generic';
+            t.insertAdjacentHTML('beforeend', SVG.play);
             var n = document.createElement('div');
             n.className = 'word';
             n.textContent = app.name;
             t.appendChild(n);
         }
-        // Imagem própria: icons/<id>.png cobre o cartão inteiro
-        if (customIcon[app.id] !== false) {
+    }
+
+    // Caminho do ícone instalado; algumas versões do Tizen retornam sem "file://"
+    function iconUrls(path) {
+        if (!path) return [];
+        return /^[a-z]+:/i.test(path) ? [path] : [path, 'file://' + path];
+    }
+
+    function makeTile(app) {
+        var t = document.createElement('div');
+        t.className = 'tile';
+
+        // 1) icons/<id>.png escolhido por você cobre o cartão inteiro
+        // 2) ícone oficial do app, o mesmo que a TV mostra (sempre a versão instalada)
+        // 3) nome em texto com as cores da marca
+        var sources = [];
+        if (resolved[app.id]) sources.push(resolved[app.id]);
+        else if (resolved[app.id] === null) sources = [];
+        else if (customIcon[app.id] !== false) sources.push({ url: 'icons/' + app.id + '.png', full: true });
+        if (resolved[app.id] === undefined) iconUrls(app.icon).forEach(function (u) { sources.push({ url: u }); });
+
+        var b = brandOf(app.name);
+        t.style.background = b ? b.bg : '';
+        if (!b) t.className += ' generic';
+
+        (function next(i) {
+            if (i >= sources.length) { resolved[app.id] = null; return wordmark(t, app); }
+            var src = sources[i];
             var img = new Image();
-            img.className = 'full';
-            img.onload = function () { customIcon[app.id] = true; t.appendChild(img); };
-            img.onerror = function () { customIcon[app.id] = false; };
-            img.src = 'icons/' + app.id + '.png';
-        }
+            img.onload = function () {
+                if (src.full) customIcon[app.id] = true;
+                resolved[app.id] = src;
+                t.innerHTML = '';
+                img.className = src.full ? 'full' : 'app-icon';
+                t.appendChild(img);
+            };
+            img.onerror = function () {
+                if (src.full) customIcon[app.id] = false;
+                next(i + 1);
+            };
+            img.src = src.url;
+        })(0);
         return t;
     }
 
@@ -257,8 +281,10 @@
         if (moving) label.textContent = '◀ ▶ mover   ·   OK concluir';
         else if (!list.length) label.textContent = 'Vá em ⚙ Personalizar para escolher seus apps';
         else if (zone === 'row') label.textContent = list[focusIndex].name;
+        else if (zone === 'media') label.textContent = MEDIA_BTNS[mediaIndex];
         else label.textContent = TOP[topIndex].name;
         renderTop();
+        renderMedia();
     }
 
     function homeKey(code) {
@@ -273,15 +299,23 @@
             case KEY.LEFT:
                 if (zone === 'row' && focusIndex > 0) focusIndex--;
                 if (zone === 'top' && topIndex > 0) topIndex--;
+                if (zone === 'media' && mediaIndex > 0) mediaIndex--;
                 break;
             case KEY.RIGHT:
                 if (zone === 'row' && focusIndex < list.length - 1) focusIndex++;
                 if (zone === 'top' && topIndex < TOP.length - 1) topIndex++;
+                if (zone === 'media' && mediaIndex < MEDIA_BTNS.length - 1) mediaIndex++;
                 break;
-            case KEY.UP:   zone = 'top'; break;
-            case KEY.DOWN: if (list.length) zone = 'row'; break;
+            case KEY.UP:
+                zone = (zone === 'row' && media.now) ? 'media' : 'top';
+                break;
+            case KEY.DOWN:
+                if (zone === 'top' && media.now) zone = 'media';
+                else if (list.length) zone = 'row';
+                break;
             case KEY.ENTER:
                 if (zone === 'top') TOP[topIndex].run();
+                else if (zone === 'media') mediaAction(mediaIndex);
                 else if (list[focusIndex]) launch(list[focusIndex]);
                 break;
             case KEY.GREEN: openPanel(); break;
@@ -302,6 +336,119 @@
         var hidden = state.favorites.filter(function (id) { return visible.indexOf(id) < 0; });
         state.favorites = visible.concat(hidden);
         focusIndex = b;
+    }
+
+    // ---------- Player de mídia ----------
+    // Lê o que está tocando pela Media Controller API do Tizen (tizen.mediacontroller).
+    // Só aparece se o app que está tocando (Spotify, YouTube…) publicar essas informações.
+    var MEDIA_BTNS = ['Abrir app', 'Anterior', 'Tocar / pausar', 'Próxima'];
+    var mediaIndex = 2;
+    var media = { now: null, demo: { title: 'Alien Boy', artist: 'Oliver Tree', appId: 'demo.spotify',
+                                     state: 'PLAY', position: 52000, duration: 160000 } };
+    var MEDIA_SVG = {
+        prev:  '<svg viewBox="0 0 24 24"><path d="M6 5v14M19 5l-10 7 10 7z"/></svg>',
+        next:  '<svg viewBox="0 0 24 24"><path d="M18 5v14M5 5l10 7-10 7z"/></svg>',
+        play:  '<svg viewBox="0 0 24 24"><path d="M7 4.5l13 7.5-13 7.5z"/></svg>',
+        pause: '<svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>',
+        note:  '<svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="16" r="2"/></svg>'
+    };
+
+    function mediaFrom(server) {
+        if (!server || server.state === 'INACTIVE' || !server.playback) return null;
+        var pb = server.playback, st = pb.state;
+        if (st !== 'PLAY' && st !== 'PAUSE') return null;
+        var md = pb.metadata || {};
+        return {
+            server: server, appId: server.name, state: st,
+            title: md.title || '', artist: md.artist || md.album || '',
+            picture: md.picture || '', position: pb.position || 0,
+            duration: parseInt(md.duration, 10) || 0
+        };
+    }
+
+    function readMedia(done) {
+        if (!isTizen) return done(media.demo);
+        var client;
+        try { client = tizen.mediacontroller.getClient(); } catch (e) { return done(null); }
+        try {
+            if (client.getLatestServerInfo) return done(mediaFrom(client.getLatestServerInfo()));
+            client.findServers(function (list) {
+                var found = null;
+                list.forEach(function (s) { found = found || mediaFrom(s); });
+                done(found);
+            }, function () { done(null); });
+        } catch (e) { done(null); }
+    }
+
+    function pollMedia() {
+        if (document.hidden || view !== 'home') return;
+        readMedia(function (now) {
+            var had = !!media.now;
+            media.now = now;
+            if (!now && zone === 'media') zone = 'row';
+            if (had !== !!now) renderRow(); else renderMedia();
+        });
+    }
+
+    function renderMedia() {
+        var box = $('media'), m = media.now;
+        $('weather').classList.toggle('compact', !!m);
+        if (!m) { box.classList.add('hidden'); return; }
+        box.classList.remove('hidden');
+
+        var app = findApp(m.appId);
+        $('m-title').textContent = m.title || (app ? app.name : 'Tocando agora');
+        $('m-artist').textContent = m.artist;
+        $('m-app').textContent = app ? app.name : '';
+
+        var cover = $('m-cover');
+        var known = app && resolved[app.id];
+        var pic = m.picture || (known && !known.full ? known.url : '') || '';
+        if (cover.getAttribute('data-src') !== pic) {
+            cover.setAttribute('data-src', pic);
+            cover.innerHTML = MEDIA_SVG.note;
+            if (pic) {
+                var img = new Image();
+                img.onload = function () { cover.innerHTML = ''; cover.appendChild(img); };
+                img.src = pic;
+            }
+        }
+
+        var bar = $('m-bar');
+        bar.style.visibility = m.duration ? 'visible' : 'hidden';
+        if (m.duration) $('m-fill').style.width = Math.min(100, 100 * m.position / m.duration) + '%';
+
+        var btns = [null, MEDIA_SVG.prev, m.state === 'PLAY' ? MEDIA_SVG.pause : MEDIA_SVG.play, MEDIA_SVG.next];
+        var row = $('m-btns');
+        row.innerHTML = '';
+        for (var i = 1; i < btns.length; i++) {
+            var d = document.createElement('div');
+            d.className = 'm-btn' + (zone === 'media' && mediaIndex === i ? ' focus' : '');
+            d.innerHTML = btns[i];
+            row.appendChild(d);
+        }
+        box.classList.toggle('focus-open', zone === 'media' && mediaIndex === 0);
+    }
+
+    function mediaAction(i) {
+        var m = media.now;
+        if (!m) return;
+        if (i === 0) {
+            var app = findApp(m.appId);
+            return app ? launch(app) : toast('App de mídia não encontrado');
+        }
+        var action = i === 1 ? 'PREV' : i === 3 ? 'NEXT' : (m.state === 'PLAY' ? 'PAUSE' : 'PLAY');
+        if (!isTizen) {
+            if (i === 2) m.state = action;
+            return renderMedia();
+        }
+        try {
+            if (m.server.sendPlaybackAction) m.server.sendPlaybackAction(action, function () { });
+            else m.server.sendPlaybackState(action, function () { }, function (e) { toast(e.message); });
+        } catch (e) {
+            toast('O app não aceitou o comando: ' + e.message);
+        }
+        setTimeout(pollMedia, 700);
     }
 
     // ---------- Todos os apps ----------
@@ -450,6 +597,7 @@
     }
     function closeOverlay() {
         view = 'home';
+        pollMedia();
         $('panel').classList.add('hidden');
         $('all').classList.add('hidden');
         renderRow();
@@ -587,7 +735,7 @@
 
     // Ao voltar para o launcher: recarrega apps (instalados/removidos) e o clima
     document.addEventListener('visibilitychange', function () {
-        if (!document.hidden) { loadInstalled(renderRow); loadWeather(false); }
+        if (!document.hidden) { loadInstalled(renderRow); loadWeather(false); pollMedia(); }
     });
 
     load();
@@ -597,6 +745,7 @@
     tick();
     setInterval(tick, 10000);
     loadWeather(false);
+    setInterval(pollMedia, 2000);
     setInterval(function () { loadWeather(false); }, 30 * 60 * 1000);
     setInterval(applyWallpaper, 6 * 60 * 60 * 1000);
     loadInstalled(function () {
@@ -608,5 +757,6 @@
             save();
         }
         renderRow();
+        pollMedia();
     });
 })();

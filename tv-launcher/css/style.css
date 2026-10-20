@@ -62,9 +62,48 @@ header {
 .photo-title  { font-size: 30px; font-weight: 600; }
 .photo-credit { font-size: 20px; color: rgba(255,255,255,.65); margin-top: 6px; max-width: 760px; text-align: right; }
 
+/* ---------- Widgets (player + clima) ---------- */
+.widgets {
+    position: absolute; left: 70px; right: 70px; top: 560px;
+    display: flex; gap: 30px; align-items: stretch;
+}
+
+.media {
+    flex: 0 0 auto; width: 800px; height: 175px; padding: 0 30px 0 22px;
+    display: flex; align-items: center; gap: 28px;
+    border: 3px solid rgba(255,255,255,.10);
+    transition: border-color .2s ease;
+}
+.media.hidden { display: none; }
+.media.focus-open { border-color: #fff; }
+.m-cover {
+    flex: 0 0 auto; width: 130px; height: 130px; border-radius: 22px; overflow: hidden;
+    background: rgba(255,255,255,.12);
+    display: flex; align-items: center; justify-content: center;
+}
+.m-cover img { width: 100%; height: 100%; object-fit: cover; }
+.m-cover svg { width: 56px; height: 56px; stroke: #fff; fill: none; stroke-width: 1.6; }
+.m-info { flex: 1; min-width: 0; }
+.m-title  { font-size: 34px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-artist { font-size: 26px; color: rgba(255,255,255,.75); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-bar  { height: 6px; border-radius: 3px; background: rgba(255,255,255,.25); margin-top: 18px; overflow: hidden; }
+.m-fill { height: 100%; width: 0; background: #fff; border-radius: 3px; transition: width 1s linear; }
+.m-app  { font-size: 20px; color: rgba(255,255,255,.6); margin-top: 10px; }
+.m-btns { display: flex; gap: 18px; }
+.m-btn {
+    width: 84px; height: 84px; border-radius: 50%;
+    background: rgba(255,255,255,.16); border: 3px solid transparent;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .2s ease, background .2s ease, border-color .2s ease;
+}
+.m-btn svg { width: 34px; height: 34px; stroke: #fff; fill: #fff; stroke-width: 1.6; stroke-linejoin: round; }
+.m-btn.focus { transform: scale(1.12); background: rgba(255,255,255,.32); border-color: #fff; }
+
 /* ---------- Clima ---------- */
+.weather.compact .w-hours { display: none; }
+.weather.compact { gap: 34px; flex: 1; min-width: 0; overflow: hidden; }
+.w-desc, .w-extra div { white-space: nowrap; }
 .weather {
-    position: absolute; left: 70px; top: 560px;
     height: 175px; padding: 0 44px 0 34px;
     display: flex; align-items: center; gap: 46px;
 }
@@ -103,7 +142,7 @@ header {
 .tile.focus { transform: scale(1.12); border-color: #fff; box-shadow: 0 18px 50px rgba(0,0,0,.5); z-index: 2; }
 .tile.moving { border-style: dashed; border-color: var(--accent); }
 .tile > img.full { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.tile img.app-icon { width: 64px; height: 64px; object-fit: contain; }
+.tile img.app-icon { width: 112px; height: 112px; object-fit: contain; border-radius: 24px; }
 
 /* Marca em texto (não usa logotipos oficiais) */
 .word { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; white-space: nowrap; }

@@ -7,7 +7,11 @@ Você abre o app e usa como tela inicial.
 - **Fundo:** foto do dia do Bing (com título e crédito no canto), `wallpaper.jpg` local ou sem foto.
 - **Clima:** Open-Meteo (gratuito, sem chave), atualizado a cada 30 min. A localização fica fixa em
   `PLACE` no começo do `js/main.js` (coordenadas de Goiânia; troque lá se quiser outro ponto).
-- **Cartões:** cores e nome em texto para os apps mais comuns. Os demais usam o ícone que a própria TV fornece.
+- **Cartões:** usam o **ícone oficial que o próprio app instalado entrega à TV** (o mesmo do Smart Hub), então
+  ficam sempre na versão atual quando o app é atualizado. Se a TV não fornecer o ícone, aparece o nome em texto com as cores da marca.
+- **Tocando agora:** se o Spotify, YouTube ou outro app estiver tocando quando você voltar ao launcher, aparece um
+  cartão com capa, título, artista, progresso e botões anterior / tocar-pausar / próxima. Ele usa a Media Controller
+  API do Tizen e só funciona com apps que publicam essas informações para o sistema.
 - Sem internet, o launcher mostra a última foto e o último clima salvos.
 
 ## Controles
@@ -15,7 +19,7 @@ Você abre o app e usa como tela inicial.
 | Tecla | Na tela inicial | No painel Personalizar |
 |---|---|---|
 | ◀ ▶ | navega entre os apps | navega entre os itens |
-| ▲ ▼ | alterna entre a faixa de apps e os botões do topo | troca de seção / rola a lista de apps |
+| ▲ ▼ | alterna entre a faixa de apps, o player e os botões do topo | troca de seção / rola a lista de apps |
 | OK | abre o app | escolhe tema, executa ação ou adiciona/remove app |
 | Voltar | sai do modo reorganizar | fecha o painel |
 | Vermelho | liga/desliga o modo reorganizar | — |
@@ -61,3 +65,8 @@ Pelo terminal (`C:\tizen-studio\tools\ide\bin` no PATH), dentro desta pasta:
 O nome do dispositivo aparece em `sdb devices`. Se preferir o modo gráfico, importe a pasta como projeto web no Tizen Studio e use **Run As > Tizen Web Application**.
 
 O app aparece na TV como **Inicio** em *Apps*. Mova ele para o começo da barra do Smart Hub para abrir mais rápido.
+
+## Se a instalação falhar por permissão
+
+O `config.xml` pede a permissão `mediacontroller.client` para o player. Se o `tizen install` recusar o pacote
+por causa de privilégio, apague essa linha do `config.xml` e empacote de novo: o launcher funciona sem o player.
