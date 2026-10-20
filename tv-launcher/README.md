@@ -57,6 +57,13 @@ Ou pelo terminal (`C:\tizen-studio\tools\sdb.exe`):
 O DUID da TV conectada é incluído automaticamente no certificado de distribuidor.
 
 ### 5. Empacotar e instalar
+
+**Jeito rápido:** no PowerShell, dentro desta pasta:
+
+    powershell -ExecutionPolicy Bypass -File instalar.ps1 -TvIp IP_DA_TV -Perfil NOME_DO_PERFIL
+
+O script conecta na TV, gera o `.wgt` e instala. Ou faça manualmente:
+
 Pelo terminal (`C:\tizen-studio\tools\ide\bin` no PATH), dentro desta pasta:
 
     tizen package -t wgt -s NOME_DO_PERFIL_DE_CERTIFICADO
