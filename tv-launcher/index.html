@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>Inicio</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="theme-grafite">
+    <div id="wallpaper"></div>
+
+    <header>
+        <div id="clock">--:--</div>
+        <div id="date"></div>
+        <div id="greeting"></div>
+    </header>
+
+    <main>
+        <div id="row" class="row"></div>
+        <div id="hint" class="hint"></div>
+    </main>
+
+    <!-- Painel de personalização -->
+    <section id="panel" class="panel hidden">
+        <div class="panel-box">
+            <h2>Personalizar</h2>
+            <div class="panel-section">
+                <h3>Tema</h3>
+                <div id="themes" class="chips"></div>
+            </div>
+            <div class="panel-section">
+                <h3>Ações</h3>
+                <div id="actions" class="chips"></div>
+            </div>
+            <div class="panel-section grow">
+                <h3>Apps instalados <small>(OK adiciona / remove da tela inicial)</small></h3>
+                <div id="apps" class="app-list"></div>
+            </div>
+        </div>
+    </section>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

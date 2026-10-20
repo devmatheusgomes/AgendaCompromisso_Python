@@ -1,0 +1,120 @@
+/* Tela fixa em 1920x1080 (resolução lógica das TVs Samsung Tizen) */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    font-family: "SamsungOne", "Samsung Sans", "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    transition: background .6s ease;
+}
+
+/* ---------- Temas ---------- */
+.theme-grafite  { --bg: radial-gradient(ellipse at 20% 0%, #2a2d34 0%, #121316 60%); --fg: #f2f2f2; --muted: #8b8f98; --tile: rgba(255,255,255,.06); --accent: #ffffff; }
+.theme-noite    { --bg: radial-gradient(ellipse at 80% 0%, #1d2b53 0%, #0a0f1f 65%); --fg: #eef2ff; --muted: #8190b8; --tile: rgba(255,255,255,.07); --accent: #7aa2ff; }
+.theme-floresta { --bg: radial-gradient(ellipse at 10% 10%, #1f3a2e 0%, #0b1712 65%); --fg: #ecf5ef; --muted: #86a596; --tile: rgba(255,255,255,.07); --accent: #7fd6a4; }
+.theme-areia    { --bg: radial-gradient(ellipse at 50% 0%, #f7f1e8 0%, #e6dccd 70%); --fg: #2b2620; --muted: #8a7f70; --tile: rgba(0,0,0,.05); --accent: #c46a3c; }
+.theme-oled     { --bg: #000; --fg: #ffffff; --muted: #6d6d6d; --tile: rgba(255,255,255,.05); --accent: #ffffff; }
+
+#wallpaper {
+    position: fixed; inset: 0;
+    background-size: cover; background-position: center;
+    opacity: 0; transition: opacity .8s ease;
+    z-index: -1;
+}
+#wallpaper.on { opacity: 1; }
+#wallpaper.on::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,.25) 0%, rgba(0,0,0,.65) 100%);
+}
+body.has-wallpaper { --fg: #ffffff; --muted: rgba(255,255,255,.7); --tile: rgba(255,255,255,.12); }
+
+/* ---------- Cabeçalho ---------- */
+header { padding: 150px 160px 0; }
+#clock    { font-size: 180px; font-weight: 200; letter-spacing: -6px; line-height: 1; }
+#date     { font-size: 40px; font-weight: 300; color: var(--muted); margin-top: 20px; }
+#greeting { font-size: 32px; font-weight: 300; color: var(--muted); margin-top: 8px; }
+
+/* ---------- Linha de apps ---------- */
+main { position: absolute; left: 0; right: 0; bottom: 150px; padding: 0 160px; }
+
+.row { display: flex; gap: 48px; align-items: flex-end; }
+
+.tile {
+    display: flex; flex-direction: column; align-items: center; gap: 22px;
+    width: 170px;
+    transition: transform .25s ease, opacity .25s ease;
+    opacity: .75;
+}
+.tile .icon {
+    width: 150px; height: 150px; border-radius: 44px;
+    background: var(--tile);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 64px; font-weight: 300; color: var(--fg);
+    border: 2px solid transparent;
+    transition: border-color .25s ease, box-shadow .25s ease, background .25s ease;
+    overflow: hidden;
+}
+.tile .icon img { width: 100%; height: 100%; object-fit: cover; }
+.tile .icon svg { width: 64px; height: 64px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+.tile .label {
+    font-size: 26px; font-weight: 400; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;
+    transition: color .25s ease;
+}
+
+.tile.focus { transform: translateY(-14px) scale(1.12); opacity: 1; }
+.tile.focus .icon { border-color: var(--accent); box-shadow: 0 18px 50px rgba(0,0,0,.35); }
+.tile.focus .label { color: var(--fg); }
+
+.tile.moving .icon { border-style: dashed; border-color: var(--accent); }
+
+.hint { margin-top: 40px; font-size: 22px; color: var(--muted); height: 30px; }
+
+/* ---------- Painel ---------- */
+.panel {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.55);
+    display: flex; justify-content: flex-end;
+    transition: opacity .25s ease;
+}
+.panel.hidden { opacity: 0; pointer-events: none; }
+.panel-box {
+    width: 820px; height: 100%;
+    background: #15171b; color: #f2f2f2;
+    padding: 90px 70px; display: flex; flex-direction: column; gap: 40px;
+}
+.panel h2 { font-size: 52px; font-weight: 300; }
+.panel h3 { font-size: 24px; font-weight: 500; color: #8b8f98; margin-bottom: 18px; text-transform: uppercase; letter-spacing: 2px; }
+.panel h3 small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.panel-section.grow { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 16px; }
+.chip {
+    padding: 14px 26px; border-radius: 40px; font-size: 24px;
+    background: rgba(255,255,255,.07); border: 2px solid transparent;
+}
+.chip.active { background: rgba(255,255,255,.18); }
+
+.app-list { flex: 1; overflow: hidden; position: relative; }
+.app-list .inner { position: absolute; left: 0; right: 0; top: 0; transition: top .2s ease; }
+.app-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 26px; border-radius: 18px; font-size: 26px;
+    border: 2px solid transparent; margin-bottom: 6px;
+}
+.app-item .check { font-size: 26px; color: #8b8f98; }
+.app-item.on .check { color: #7fd6a4; }
+
+.chip.focus, .app-item.focus { border-color: #ffffff; background: rgba(255,255,255,.12); }
+
+/* ---------- Aviso ---------- */
+.toast {
+    position: fixed; left: 50%; bottom: 60px; transform: translate(-50%, 40px);
+    background: rgba(20,20,20,.92); color: #fff;
+    padding: 18px 36px; border-radius: 40px; font-size: 24px;
+    opacity: 0; transition: opacity .25s ease, transform .25s ease;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
