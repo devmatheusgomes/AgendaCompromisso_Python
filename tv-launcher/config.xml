@@ -7,6 +7,7 @@
     <icon src="icon.png"/>
     <content src="index.html"/>
     <feature name="http://tizen.org/feature/screen.size.all"/>
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
     <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
     <tizen:privilege name="http://tizen.org/privilege/application.info"/>
     <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>

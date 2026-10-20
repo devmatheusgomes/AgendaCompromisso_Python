@@ -7,71 +7,133 @@ body {
     overflow: hidden;
     font-family: "SamsungOne", "Samsung Sans", "Helvetica Neue", Arial, sans-serif;
     background: var(--bg);
-    color: var(--fg);
-    transition: background .6s ease;
+    color: #fff;
 }
 
-/* ---------- Temas ---------- */
-.theme-grafite  { --bg: radial-gradient(ellipse at 20% 0%, #2a2d34 0%, #121316 60%); --fg: #f2f2f2; --muted: #8b8f98; --tile: rgba(255,255,255,.06); --accent: #ffffff; }
-.theme-noite    { --bg: radial-gradient(ellipse at 80% 0%, #1d2b53 0%, #0a0f1f 65%); --fg: #eef2ff; --muted: #8190b8; --tile: rgba(255,255,255,.07); --accent: #7aa2ff; }
-.theme-floresta { --bg: radial-gradient(ellipse at 10% 10%, #1f3a2e 0%, #0b1712 65%); --fg: #ecf5ef; --muted: #86a596; --tile: rgba(255,255,255,.07); --accent: #7fd6a4; }
-.theme-areia    { --bg: radial-gradient(ellipse at 50% 0%, #f7f1e8 0%, #e6dccd 70%); --fg: #2b2620; --muted: #8a7f70; --tile: rgba(0,0,0,.05); --accent: #c46a3c; }
-.theme-oled     { --bg: #000; --fg: #ffffff; --muted: #6d6d6d; --tile: rgba(255,255,255,.05); --accent: #ffffff; }
+/* ---------- Temas (cor de destaque e fundo quando não há foto) ---------- */
+.theme-grafite  { --bg: radial-gradient(ellipse at 20% 0%, #2a2d34 0%, #121316 60%); --accent: #ffffff; }
+.theme-noite    { --bg: radial-gradient(ellipse at 80% 0%, #1d2b53 0%, #0a0f1f 65%); --accent: #7aa2ff; }
+.theme-floresta { --bg: radial-gradient(ellipse at 10% 10%, #1f3a2e 0%, #0b1712 65%); --accent: #7fd6a4; }
+.theme-por-do-sol { --bg: radial-gradient(ellipse at 70% 0%, #6b3a2a 0%, #1c1210 65%); --accent: #ffb37a; }
+.theme-oled     { --bg: #000; --accent: #ffffff; }
 
 #wallpaper {
-    position: fixed; inset: 0;
+    position: fixed; inset: 0; z-index: -2;
     background-size: cover; background-position: center;
-    opacity: 0; transition: opacity .8s ease;
-    z-index: -1;
+    opacity: 0; transition: opacity 1s ease;
 }
 #wallpaper.on { opacity: 1; }
-#wallpaper.on::after {
-    content: ""; position: absolute; inset: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,.25) 0%, rgba(0,0,0,.65) 100%);
+#shade {
+    position: fixed; inset: 0; z-index: -1;
+    background:
+        linear-gradient(180deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 28%),
+        linear-gradient(0deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 45%);
 }
-body.has-wallpaper { --fg: #ffffff; --muted: rgba(255,255,255,.7); --tile: rgba(255,255,255,.12); }
 
-/* ---------- Cabeçalho ---------- */
-header { padding: 150px 160px 0; }
-#clock    { font-size: 180px; font-weight: 200; letter-spacing: -6px; line-height: 1; }
-#date     { font-size: 40px; font-weight: 300; color: var(--muted); margin-top: 20px; }
-#greeting { font-size: 32px; font-weight: 300; color: var(--muted); margin-top: 8px; }
-
-/* ---------- Linha de apps ---------- */
-main { position: absolute; left: 0; right: 0; bottom: 150px; padding: 0 160px; }
-
-.row { display: flex; gap: 48px; align-items: flex-end; }
-
-.tile {
-    display: flex; flex-direction: column; align-items: center; gap: 22px;
-    width: 170px;
-    transition: transform .25s ease, opacity .25s ease;
-    opacity: .75;
+.glass {
+    background: rgba(20, 22, 26, .42);
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 40px;
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
 }
-.tile .icon {
-    width: 150px; height: 150px; border-radius: 44px;
-    background: var(--tile);
+
+/* ---------- Topo ---------- */
+header {
+    position: absolute; top: 60px; left: 96px; right: 96px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    text-shadow: 0 2px 12px rgba(0,0,0,.45);
+}
+#clock { font-size: 120px; font-weight: 300; line-height: 1; letter-spacing: -2px; }
+#date  { font-size: 34px; font-weight: 500; margin-top: 12px; }
+
+.top-right { display: flex; flex-direction: column; align-items: flex-end; }
+.topbar { display: flex; gap: 26px; margin-bottom: 34px; }
+.round {
+    width: 80px; height: 80px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 64px; font-weight: 300; color: var(--fg);
-    border: 2px solid transparent;
-    transition: border-color .25s ease, box-shadow .25s ease, background .25s ease;
+    background: rgba(255,255,255,.18);
+    border: 3px solid transparent;
+    transition: transform .2s ease, background .2s ease, border-color .2s ease;
+}
+.round svg { width: 38px; height: 38px; stroke: #fff; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.round.focus { transform: scale(1.15); background: rgba(255,255,255,.32); border-color: var(--accent); }
+
+.photo-title  { font-size: 30px; font-weight: 600; }
+.photo-credit { font-size: 20px; color: rgba(255,255,255,.65); margin-top: 6px; max-width: 760px; text-align: right; }
+
+/* ---------- Clima ---------- */
+.weather {
+    position: absolute; left: 70px; top: 560px;
+    height: 175px; padding: 0 44px 0 34px;
+    display: flex; align-items: center; gap: 46px;
+}
+.weather .now { display: flex; align-items: center; gap: 22px; }
+.w-icon svg { width: 104px; height: 104px; stroke: #fff; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.w-icon .sun { stroke: #ffd36b; }
+.w-temp { font-size: 84px; font-weight: 300; line-height: 1; }
+.w-desc { font-size: 26px; color: rgba(255,255,255,.8); margin-top: 6px; }
+.w-place { font-size: 34px; font-weight: 600; }
+.w-extra { font-size: 24px; color: rgba(255,255,255,.7); margin-top: 10px; line-height: 1.5; }
+
+.w-hours { display: flex; gap: 14px; padding-left: 40px; border-left: 1px solid rgba(255,255,255,.15); }
+.w-hour { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 92px; }
+.w-hour .h { font-size: 22px; color: rgba(255,255,255,.7); }
+.w-hour svg { width: 46px; height: 46px; stroke: #fff; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.w-hour svg .sun { stroke: #ffd36b; }
+.w-hour .t { font-size: 26px; }
+
+/* ---------- Faixa de apps ---------- */
+.dock {
+    position: absolute; left: 64px; right: 64px; bottom: 50px;
+    height: 260px; padding: 30px 20px 0;
     overflow: hidden;
 }
-.tile .icon img { width: 100%; height: 100%; object-fit: cover; }
-.tile .icon svg { width: 64px; height: 64px; stroke: currentColor; fill: none; stroke-width: 1.6; }
-.tile .label {
-    font-size: 26px; font-weight: 400; color: var(--muted);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;
-    transition: color .25s ease;
+.row { display: flex; gap: 34px; padding: 0 0 0 20px; transition: transform .3s ease; }
+
+.tile {
+    flex: 0 0 auto;
+    width: 250px; height: 140px; border-radius: 22px;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    position: relative; overflow: hidden;
+    border: 4px solid transparent;
+    box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
 }
+.tile.focus { transform: scale(1.12); border-color: #fff; box-shadow: 0 18px 50px rgba(0,0,0,.5); z-index: 2; }
+.tile.moving { border-style: dashed; border-color: var(--accent); }
+.tile > img.full { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.tile img.app-icon { width: 64px; height: 64px; object-fit: contain; }
 
-.tile.focus { transform: translateY(-14px) scale(1.12); opacity: 1; }
-.tile.focus .icon { border-color: var(--accent); box-shadow: 0 18px 50px rgba(0,0,0,.35); }
-.tile.focus .label { color: var(--fg); }
+/* Marca em texto (não usa logotipos oficiais) */
+.word { font-size: 44px; font-weight: 800; letter-spacing: -1.5px; white-space: nowrap; }
+.word.sm { font-size: 34px; }
+.word.xs { font-size: 26px; font-weight: 700; letter-spacing: 0; }
+.yt-badge {
+    width: 58px; height: 40px; border-radius: 11px; background: #ff0000;
+    display: flex; align-items: center; justify-content: center;
+}
+.yt-badge::after {
+    content: ""; border-left: 18px solid #fff;
+    border-top: 11px solid transparent; border-bottom: 11px solid transparent; margin-left: 4px;
+}
+.tile.generic { background: rgba(255,255,255,.14); flex-direction: column; gap: 8px; }
+.tile.generic .word { font-size: 24px; font-weight: 600; letter-spacing: 0; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+.tile.generic svg { width: 46px; height: 46px; stroke: #fff; fill: none; stroke-width: 1.6; }
 
-.tile.moving .icon { border-style: dashed; border-color: var(--accent); }
+.label { padding: 26px 0 0 20px; font-size: 26px; font-weight: 500; height: 60px; color: rgba(255,255,255,.9); }
 
-.hint { margin-top: 40px; font-size: 22px; color: var(--muted); height: 30px; }
+/* ---------- Todos os apps ---------- */
+.overlay {
+    position: fixed; inset: 0; padding: 90px 110px;
+    background: rgba(8,9,11,.82);
+    -webkit-backdrop-filter: blur(30px); backdrop-filter: blur(30px);
+    transition: opacity .25s ease;
+}
+.overlay.hidden, .panel.hidden { opacity: 0; pointer-events: none; }
+.overlay h2 { font-size: 52px; font-weight: 300; margin-bottom: 50px; }
+.grid { display: flex; flex-wrap: wrap; gap: 40px 34px; height: 820px; overflow: hidden; align-content: flex-start; position: relative; }
+.grid .inner { display: flex; flex-wrap: wrap; gap: 40px 34px; transition: transform .25s ease; padding: 12px; }
 
 /* ---------- Painel ---------- */
 .panel {
@@ -80,7 +142,6 @@ main { position: absolute; left: 0; right: 0; bottom: 150px; padding: 0 160px; }
     display: flex; justify-content: flex-end;
     transition: opacity .25s ease;
 }
-.panel.hidden { opacity: 0; pointer-events: none; }
 .panel-box {
     width: 820px; height: 100%;
     background: #15171b; color: #f2f2f2;
@@ -112,7 +173,7 @@ main { position: absolute; left: 0; right: 0; bottom: 150px; padding: 0 160px; }
 
 /* ---------- Aviso ---------- */
 .toast {
-    position: fixed; left: 50%; bottom: 60px; transform: translate(-50%, 40px);
+    position: fixed; left: 50%; top: 60px; transform: translate(-50%, -30px);
     background: rgba(20,20,20,.92); color: #fff;
     padding: 18px 36px; border-radius: 40px; font-size: 24px;
     opacity: 0; transition: opacity .25s ease, transform .25s ease;

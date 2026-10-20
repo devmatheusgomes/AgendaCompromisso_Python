@@ -1,7 +1,8 @@
 /*
- * Launcher minimalista para TVs Samsung Tizen.
+ * Launcher para TVs Samsung Tizen.
  * Funciona como um app comum: lista os apps instalados (tizen.application.getAppsInfo),
  * deixa você escolher os favoritos e abre cada um com tizen.application.launch.
+ * Fundo: foto do dia do Bing (ou wallpaper.jpg local). Clima: Open-Meteo, fixo em Goiânia/GO.
  * Fora da TV (navegador do PC) roda em modo de demonstração com apps fictícios.
  */
 (function () {
@@ -10,46 +11,94 @@
     var KEY = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 10009, ESC: 27,
                 RED: 403, GREEN: 404, YELLOW: 405, BLUE: 406 };
 
+    // Goiânia/GO (região do CEP 74884-115). Troque aqui para outra cidade.
+    var PLACE = { name: 'Goiânia, GO', lat: -16.6869, lon: -49.2648 };
+    var WEATHER_URL = 'https://api.open-meteo.com/v1/forecast?latitude=' + PLACE.lat +
+        '&longitude=' + PLACE.lon +
+        '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,is_day' +
+        '&hourly=temperature_2m,weather_code,is_day' +
+        '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max' +
+        '&timezone=America%2FSao_Paulo&forecast_days=2';
+    var BING_URL = 'https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=pt-BR';
+
     var THEMES = [
-        { id: 'grafite',  name: 'Grafite' },
-        { id: 'noite',    name: 'Meia-noite' },
-        { id: 'floresta', name: 'Floresta' },
-        { id: 'areia',    name: 'Areia' },
-        { id: 'oled',     name: 'Preto OLED' }
+        { id: 'grafite',    name: 'Grafite' },
+        { id: 'noite',      name: 'Meia-noite' },
+        { id: 'floresta',   name: 'Floresta' },
+        { id: 'por-do-sol', name: 'Pôr do sol' },
+        { id: 'oled',       name: 'Preto OLED' }
+    ];
+    var WALLPAPERS = [
+        { id: 'bing',  name: 'Foto do dia' },
+        { id: 'local', name: 'wallpaper.jpg' },
+        { id: 'off',   name: 'Sem foto' }
     ];
 
-    // Ícones de linha simples. Cada app recebe um por palavra-chave do nome;
-    // os demais ficam com a inicial do nome (monograma).
-    var GLYPHS = {
-        play:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l6 3.5-6 3.5z"/></svg>',
-        film:  '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5v14M17 5v14M3 12h18"/></svg>',
-        tv:    '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8"/></svg>',
-        music: '<svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="16" r="2"/></svg>',
-        globe: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>',
-        gear:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>',
-        game:  '<svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="5"/><path d="M7 10v4M5 12h4"/><circle cx="16" cy="11" r=".8"/><circle cx="18" cy="13" r=".8"/></svg>',
-        photo: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>'
+    var SVG = {
+        apps:  '<svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="1.4"/><circle cx="12" cy="6" r="1.4"/><circle cx="18" cy="6" r="1.4"/><circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/><circle cx="6" cy="18" r="1.4"/><circle cx="12" cy="18" r="1.4"/><circle cx="18" cy="18" r="1.4"/></svg>',
+        gear:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+        play:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l6 3.5-6 3.5z"/></svg>'
     };
-    var GLYPH_RULES = [
-        [/youtube|twitch|vimeo/i, 'play'],
-        [/netflix|prime|disney|max|hbo|globo|paramount|star|apple tv|filme|cine|mubi|pluto/i, 'film'],
-        [/spotify|deezer|music|música|musica|tidal|radio/i, 'music'],
-        [/internet|browser|navegador|web/i, 'globe'],
-        [/game|jogo|xbox|steam|geforce|luna/i, 'game'],
-        [/galeria|gallery|photo|foto/i, 'photo'],
-        [/tv|live|ao vivo|canais/i, 'tv']
+
+    // Ícones de clima (linha) por código WMO
+    var WX_ICON = {
+        sun:   '<svg viewBox="0 0 24 24"><g class="sun"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></g></svg>',
+        moon:  '<svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>',
+        part:  '<svg viewBox="0 0 24 24"><g class="sun"><circle cx="8.5" cy="8.5" r="3.2"/><path d="M8.5 2.5v1.5M2.5 8.5H4M4.3 4.3l1 1M12.7 4.3l-1 1"/></g><path d="M8 19h9.5a3.5 3.5 0 0 0 0-7 5 5 0 0 0-9.4 1.3A2.9 2.9 0 0 0 8 19z"/></svg>',
+        cloud: '<svg viewBox="0 0 24 24"><path d="M7 19h10.5a4 4 0 0 0 0-8 5.5 5.5 0 0 0-10.6 1.5A3.3 3.3 0 0 0 7 19z"/></svg>',
+        fog:   '<svg viewBox="0 0 24 24"><path d="M4 9h16M3 13h18M5 17h14"/></svg>',
+        rain:  '<svg viewBox="0 0 24 24"><path d="M7 15h10.5a4 4 0 0 0 0-8A5.5 5.5 0 0 0 6.9 8.5 3.3 3.3 0 0 0 7 15z"/><path d="M9 18l-1 2.5M13 18l-1 2.5M17 18l-1 2.5"/></svg>',
+        storm: '<svg viewBox="0 0 24 24"><path d="M7 15h10.5a4 4 0 0 0 0-8A5.5 5.5 0 0 0 6.9 8.5 3.3 3.3 0 0 0 7 15z"/><path d="M12.5 15l-2 3.5h3l-2 3.5"/></svg>'
+    };
+    function wmo(code, isDay) {
+        var c = Number(code);
+        if (c === 0) return { d: 'Céu limpo', i: isDay ? 'sun' : 'moon' };
+        if (c === 1) return { d: 'Poucas nuvens', i: isDay ? 'part' : 'moon' };
+        if (c === 2) return { d: 'Parcialmente nublado', i: isDay ? 'part' : 'cloud' };
+        if (c === 3) return { d: 'Nublado', i: 'cloud' };
+        if (c === 45 || c === 48) return { d: 'Neblina', i: 'fog' };
+        if (c >= 51 && c <= 57) return { d: 'Garoa', i: 'rain' };
+        if (c >= 61 && c <= 67) return { d: c >= 65 ? 'Chuva forte' : 'Chuva', i: 'rain' };
+        if (c >= 71 && c <= 77) return { d: 'Neve', i: 'cloud' };
+        if (c >= 80 && c <= 82) return { d: 'Pancadas de chuva', i: 'rain' };
+        if (c >= 95) return { d: 'Trovoadas', i: 'storm' };
+        return { d: '—', i: 'cloud' };
+    }
+
+    // Cores e "marca em texto" dos apps mais comuns. Não usa logotipos oficiais:
+    // para usar uma imagem, coloque icons/<ID do app>.png (250x140).
+    var BRANDS = [
+        [/youtube/i,      { bg: '#ffffff', fg: '#212121', text: 'YouTube', badge: 'yt', size: 'sm' }],
+        [/netflix/i,      { bg: '#000000', fg: '#e50914', text: 'NETFLIX' }],
+        [/globoplay/i,    { bg: 'linear-gradient(135deg,#ff4b2b,#e0115f)', fg: '#fff', text: 'globoplay' }],
+        [/disney/i,       { bg: 'linear-gradient(160deg,#0b1d4f,#0e7490)', fg: '#fff', text: 'Disney+' }],
+        [/prime/i,        { bg: '#0f171e', fg: '#00a8e1', text: 'prime video', size: 'sm' }],
+        [/^max$|hbo/i,    { bg: '#002be7', fg: '#fff', text: 'max' }],
+        [/paramount/i,    { bg: '#0064ff', fg: '#fff', text: 'Paramount+', size: 'sm' }],
+        [/apple tv/i,     { bg: '#000', fg: '#fff', text: 'tv', size: 'sm' }],
+        [/spotify/i,      { bg: '#121212', fg: '#1ed760', text: 'Spotify' }],
+        [/deezer/i,       { bg: '#a238ff', fg: '#fff', text: 'deezer' }],
+        [/twitch/i,       { bg: '#9146ff', fg: '#fff', text: 'twitch' }],
+        [/crunchyroll/i,  { bg: '#f47521', fg: '#fff', text: 'crunchyroll', size: 'sm' }],
+        [/pluto/i,        { bg: '#000', fg: '#fff200', text: 'pluto tv', size: 'sm' }],
+        [/claro/i,        { bg: '#da291c', fg: '#fff', text: 'Claro tv+', size: 'sm' }],
+        [/internet|browser|navegador/i, { bg: '#1a73e8', fg: '#fff', text: 'Internet', size: 'sm' }]
     ];
 
-    var STORE_KEY = 'minilauncher.v1';
-    var state = { theme: 'grafite', favorites: [], wallpaper: true };
+    var STORE_KEY = 'minilauncher.v2';
+    var state = { theme: 'grafite', favorites: [], wallpaper: 'bing' };
 
-    var installed = [];   // [{id, name}]
-    var focusIndex = 0;
+    var installed = [];   // [{id, name, icon}]
+    var zone = 'row';     // 'top' | 'row'
+    var focusIndex = 0, topIndex = 0;
     var moving = false;
-    var panelOpen = false;
-    var panelFocus = { section: 0, index: 0 };   // 0 = temas, 1 = ações, 2 = apps
+    var view = 'home';    // 'home' | 'panel' | 'all'
+    var panelFocus = { section: 0, index: 0 };   // 0 temas, 1 ações, 2 apps
+    var gridIndex = 0, GRID_COLS = 6;
 
     var isTizen = typeof window.tizen !== 'undefined' && tizen.application;
+
+    function $(id) { return document.getElementById(id); }
 
     // ---------- Persistência ----------
     function load() {
@@ -58,22 +107,33 @@
             if (saved) {
                 state.theme = saved.theme || state.theme;
                 state.favorites = saved.favorites || [];
-                state.wallpaper = saved.wallpaper !== false;
+                state.wallpaper = saved.wallpaper || state.wallpaper;
             }
         } catch (e) { /* começa com o padrão */ }
     }
     function save() {
         try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { }
     }
+    function cacheGet(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
+    function cacheSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
+
+    function getJSON(url, ok, fail) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url);
+        xhr.timeout = 15000;
+        xhr.onload = function () {
+            if (xhr.status !== 200) return fail && fail();
+            try { ok(JSON.parse(xhr.responseText)); } catch (e) { if (fail) fail(); }
+        };
+        xhr.onerror = xhr.ontimeout = function () { if (fail) fail(); };
+        xhr.send();
+    }
 
     // ---------- Apps instalados ----------
     function loadInstalled(done) {
         if (!isTizen) {
-            installed = [
-                { id: 'demo.youtube', name: 'YouTube' }, { id: 'demo.netflix', name: 'Netflix' },
-                { id: 'demo.globoplay', name: 'Globoplay' }, { id: 'demo.prime', name: 'Prime Video' },
-                { id: 'demo.spotify', name: 'Spotify' }, { id: 'demo.browser', name: 'Internet' }
-            ];
+            installed = ['YouTube', 'Netflix', 'Globoplay', 'Disney+', 'Prime Video', 'Max', 'Spotify', 'Internet', 'Galeria']
+                .map(function (n) { return { id: 'demo.' + n.toLowerCase().replace(/\W/g, ''), name: n, icon: '' }; });
             return done();
         }
         try {
@@ -81,7 +141,7 @@
                 var self = tizen.application.getCurrentApplication().appInfo.id;
                 installed = list
                     .filter(function (a) { return a.show && a.id !== self && a.name; })
-                    .map(function (a) { return { id: a.id, name: a.name }; })
+                    .map(function (a) { return { id: a.id, name: a.name, icon: a.iconPath || '' }; })
                     .sort(function (a, b) { return a.name.localeCompare(b.name); });
                 done();
             }, function (err) {
@@ -94,103 +154,149 @@
         }
     }
 
-    function appName(id) {
-        for (var i = 0; i < installed.length; i++) if (installed[i].id === id) return installed[i].name;
+    function findApp(id) {
+        for (var i = 0; i < installed.length; i++) if (installed[i].id === id) return installed[i];
         return null;
     }
 
-    function launch(id) {
-        if (!isTizen) return toast('Demonstração: abriria ' + appName(id));
-        tizen.application.launch(id, null, function (err) {
+    function launch(app) {
+        if (!isTizen) return toast('Demonstração: abriria ' + app.name);
+        tizen.application.launch(app.id, null, function (err) {
             toast('Não foi possível abrir: ' + err.message);
         });
     }
 
-    // ---------- Ícones ----------
-    function iconFor(app) {
-        // Ícone personalizado: icons/<id do app>.png dentro do pacote
-        var custom = 'icons/' + app.id + '.png';
-        var glyph = null;
-        for (var i = 0; i < GLYPH_RULES.length; i++) {
-            if (GLYPH_RULES[i][0].test(app.name)) { glyph = GLYPHS[GLYPH_RULES[i][1]]; break; }
+    // ---------- Cartões ----------
+    function brandOf(name) {
+        for (var i = 0; i < BRANDS.length; i++) if (BRANDS[i][0].test(name)) return BRANDS[i][1];
+        return null;
+    }
+
+    var customIcon = {};   // id -> existe icons/<id>.png?
+
+    function makeTile(app) {
+        var t = document.createElement('div');
+        var b = brandOf(app.name);
+        if (b) {
+            t.className = 'tile';
+            t.style.background = b.bg;
+            if (b.badge === 'yt') {
+                var badge = document.createElement('div');
+                badge.className = 'yt-badge';
+                t.appendChild(badge);
+            }
+            var w = document.createElement('div');
+            w.className = 'word' + (b.size ? ' ' + b.size : '');
+            w.style.color = b.fg;
+            w.textContent = b.text;
+            t.appendChild(w);
+        } else {
+            // App sem marca cadastrada: ícone do próprio app (vindo da TV) + nome
+            t.className = 'tile generic';
+            if (app.icon) {
+                var ic = document.createElement('img');
+                ic.className = 'app-icon';
+                ic.src = app.icon;
+                t.appendChild(ic);
+            } else {
+                t.insertAdjacentHTML('beforeend', SVG.play);
+            }
+            var n = document.createElement('div');
+            n.className = 'word';
+            n.textContent = app.name;
+            t.appendChild(n);
         }
-        var fallback = glyph || '<span>' + app.name.charAt(0).toUpperCase() + '</span>';
-        var el = document.createElement('div');
-        el.className = 'icon';
-        el.innerHTML = fallback;
-        var img = new Image();
-        img.onload = function () { el.innerHTML = ''; el.appendChild(img); };
-        img.src = custom;
-        return el;
+        // Imagem própria: icons/<id>.png cobre o cartão inteiro
+        if (customIcon[app.id] !== false) {
+            var img = new Image();
+            img.className = 'full';
+            img.onload = function () { customIcon[app.id] = true; t.appendChild(img); };
+            img.onerror = function () { customIcon[app.id] = false; };
+            img.src = 'icons/' + app.id + '.png';
+        }
+        return t;
     }
 
     // ---------- Tela inicial ----------
-    function tiles() {
-        var list = state.favorites
-            .filter(function (id) { return appName(id) !== null; })
-            .map(function (id) { return { id: id, name: appName(id) }; });
-        list.push({ id: '__settings', name: 'Personalizar', settings: true });
-        return list;
+    function favorites() {
+        return state.favorites.map(findApp).filter(function (a) { return a; });
+    }
+
+    var TOP = [
+        { icon: SVG.apps, name: 'Todos os apps', run: function () { openAll(); } },
+        { icon: SVG.gear, name: 'Personalizar',  run: function () { openPanel(); } }
+    ];
+
+    function renderTop() {
+        var bar = $('topbar');
+        bar.innerHTML = '';
+        TOP.forEach(function (b, i) {
+            var d = document.createElement('div');
+            d.className = 'round' + (zone === 'top' && i === topIndex ? ' focus' : '');
+            d.innerHTML = b.icon;
+            bar.appendChild(d);
+        });
     }
 
     function renderRow() {
-        var row = document.getElementById('row');
-        var list = tiles();
-        if (focusIndex >= list.length) focusIndex = list.length - 1;
+        var row = $('row');
+        var list = favorites();
+        if (focusIndex >= list.length) focusIndex = Math.max(0, list.length - 1);
         row.innerHTML = '';
         list.forEach(function (app, i) {
-            var t = document.createElement('div');
-            t.className = 'tile' + (i === focusIndex ? ' focus' : '') + (moving && i === focusIndex ? ' moving' : '');
-            var icon = app.settings ? (function () {
-                var d = document.createElement('div'); d.className = 'icon'; d.innerHTML = GLYPHS.gear; return d;
-            })() : iconFor(app);
-            var label = document.createElement('div');
-            label.className = 'label';
-            label.textContent = app.name;
-            t.appendChild(icon);
-            t.appendChild(label);
+            var t = makeTile(app);
+            if (zone === 'row' && i === focusIndex) t.classList.add('focus');
+            if (moving && i === focusIndex) t.classList.add('moving');
             row.appendChild(t);
         });
-        var hint = document.getElementById('hint');
-        if (moving) hint.textContent = '◀ ▶ mover   ·   OK concluir';
-        else if (state.favorites.length === 0) hint.textContent = 'Abra "Personalizar" para escolher seus apps';
-        else hint.textContent = '';
+        // rola a faixa quando há mais cartões do que cabem (6 visíveis)
+        var shift = Math.max(0, focusIndex - 5) * (250 + 34);
+        row.style.transform = 'translateX(' + (-shift) + 'px)';
+
+        var label = $('label');
+        if (moving) label.textContent = '◀ ▶ mover   ·   OK concluir';
+        else if (!list.length) label.textContent = 'Vá em ⚙ Personalizar para escolher seus apps';
+        else if (zone === 'row') label.textContent = list[focusIndex].name;
+        else label.textContent = TOP[topIndex].name;
+        renderTop();
     }
 
     function homeKey(code) {
-        var list = tiles();
-        var lastApp = list.length - 2;   // último índice que é app (antes de "Personalizar")
+        var list = favorites();
+        if (moving) {
+            if (code === KEY.LEFT && focusIndex > 0) swap(focusIndex, focusIndex - 1);
+            else if (code === KEY.RIGHT && focusIndex < list.length - 1) swap(focusIndex, focusIndex + 1);
+            else if (code === KEY.ENTER || code === KEY.BACK || code === KEY.ESC || code === KEY.RED) { moving = false; save(); }
+            return renderRow();
+        }
         switch (code) {
             case KEY.LEFT:
-                if (moving) { swap(focusIndex, focusIndex - 1); }
-                else if (focusIndex > 0) focusIndex--;
+                if (zone === 'row' && focusIndex > 0) focusIndex--;
+                if (zone === 'top' && topIndex > 0) topIndex--;
                 break;
             case KEY.RIGHT:
-                if (moving) { if (focusIndex < lastApp) swap(focusIndex, focusIndex + 1); }
-                else if (focusIndex < list.length - 1) focusIndex++;
+                if (zone === 'row' && focusIndex < list.length - 1) focusIndex++;
+                if (zone === 'top' && topIndex < TOP.length - 1) topIndex++;
                 break;
+            case KEY.UP:   zone = 'top'; break;
+            case KEY.DOWN: if (list.length) zone = 'row'; break;
             case KEY.ENTER:
-                if (moving) { moving = false; save(); break; }
-                if (list[focusIndex].settings) openPanel();
-                else launch(list[focusIndex].id);
+                if (zone === 'top') TOP[topIndex].run();
+                else if (list[focusIndex]) launch(list[focusIndex]);
                 break;
-            case KEY.GREEN:
-                openPanel();
-                break;
+            case KEY.GREEN: openPanel(); break;
+            case KEY.YELLOW: openAll(); break;
             case KEY.RED:
-                if (!list[focusIndex].settings) moving = !moving;
-                if (!moving) save();
+                if (zone === 'row' && list.length) moving = true;
                 break;
-            case KEY.BACK: case KEY.ESC:
-                if (moving) { moving = false; save(); break; }
-                return; // na tela inicial o Voltar não fecha o launcher
+            default:
+                return; // Voltar na tela inicial não fecha o launcher
         }
         renderRow();
     }
 
     function swap(a, b) {
-        if (b < 0) return;
-        var visible = tiles().slice(0, -1).map(function (t) { return t.id; });
+        var visible = favorites().map(function (x) { return x.id; });
         var tmp = visible[a]; visible[a] = visible[b]; visible[b] = tmp;
         // mantém favoritos de apps desinstalados no final
         var hidden = state.favorites.filter(function (id) { return visible.indexOf(id) < 0; });
@@ -198,16 +304,58 @@
         focusIndex = b;
     }
 
+    // ---------- Todos os apps ----------
+    function renderAll() {
+        var grid = $('grid');
+        grid.innerHTML = '';
+        var inner = document.createElement('div');
+        inner.className = 'inner';
+        installed.forEach(function (app, i) {
+            var t = makeTile(app);
+            if (i === gridIndex) t.classList.add('focus');
+            inner.appendChild(t);
+        });
+        grid.appendChild(inner);
+        var rowH = 140 + 40, visibleRows = 4;
+        var r = Math.floor(gridIndex / GRID_COLS);
+        inner.style.transform = 'translateY(' + (-Math.max(0, r - visibleRows + 1) * rowH) + 'px)';
+    }
+    function allKey(code) {
+        var n = installed.length;
+        switch (code) {
+            case KEY.LEFT:  if (gridIndex % GRID_COLS > 0) gridIndex--; break;
+            case KEY.RIGHT: if (gridIndex % GRID_COLS < GRID_COLS - 1 && gridIndex < n - 1) gridIndex++; break;
+            case KEY.UP:    if (gridIndex >= GRID_COLS) gridIndex -= GRID_COLS; break;
+            case KEY.DOWN:  if (gridIndex + GRID_COLS < n) gridIndex += GRID_COLS; break;
+            case KEY.ENTER: if (installed[gridIndex]) launch(installed[gridIndex]); break;
+            case KEY.BACK: case KEY.ESC: case KEY.YELLOW: closeOverlay(); return;
+        }
+        renderAll();
+    }
+    function openAll() {
+        view = 'all'; gridIndex = 0;
+        renderAll();
+        $('all').classList.remove('hidden');
+    }
+
     // ---------- Painel ----------
+    function wallpaperName() {
+        for (var i = 0; i < WALLPAPERS.length; i++) if (WALLPAPERS[i].id === state.wallpaper) return WALLPAPERS[i].name;
+        return '';
+    }
     function actions() {
         return [
             { name: 'Reorganizar apps', run: function () {
-                closePanel();
-                if (state.favorites.length) { focusIndex = 0; moving = true; renderRow(); }
+                closeOverlay();
+                if (favorites().length) { zone = 'row'; focusIndex = 0; moving = true; renderRow(); }
             } },
-            { name: 'Papel de parede: ' + (state.wallpaper ? 'ligado' : 'desligado'), run: function () {
-                state.wallpaper = !state.wallpaper; save(); applyWallpaper();
+            { name: 'Fundo: ' + wallpaperName(), run: function () {
+                var i = 0;
+                while (WALLPAPERS[i].id !== state.wallpaper) i++;
+                state.wallpaper = WALLPAPERS[(i + 1) % WALLPAPERS.length].id;
+                save(); applyWallpaper();
             } },
+            { name: 'Atualizar clima', run: function () { loadWeather(true); } },
             { name: 'Fechar launcher', run: function () {
                 if (isTizen) tizen.application.getCurrentApplication().exit();
             } }
@@ -219,7 +367,7 @@
     }
 
     function renderPanel() {
-        var themes = document.getElementById('themes');
+        var themes = $('themes');
         themes.innerHTML = '';
         THEMES.forEach(function (t, i) {
             var c = document.createElement('div');
@@ -229,7 +377,7 @@
             themes.appendChild(c);
         });
 
-        var acts = document.getElementById('actions');
+        var acts = $('actions');
         acts.innerHTML = '';
         actions().forEach(function (a, i) {
             var c = document.createElement('div');
@@ -238,7 +386,7 @@
             acts.appendChild(c);
         });
 
-        var apps = document.getElementById('apps');
+        var apps = $('apps');
         apps.innerHTML = '';
         var inner = document.createElement('div');
         inner.className = 'inner';
@@ -276,11 +424,11 @@
                 break;
             case KEY.ENTER:
                 if (f.section === 0) { state.theme = THEMES[f.index].id; applyTheme(); save(); }
-                else if (f.section === 1) { actions()[f.index].run(); if (!panelOpen) return; }
+                else if (f.section === 1) { actions()[f.index].run(); if (view !== 'panel') return; }
                 else toggleFavorite(installed[f.index].id);
                 break;
             case KEY.BACK: case KEY.ESC: case KEY.GREEN:
-                closePanel();
+                closeOverlay();
                 return;
         }
         renderPanel();
@@ -295,14 +443,15 @@
     }
 
     function openPanel() {
-        panelOpen = true;
+        view = 'panel';
         panelFocus = { section: 0, index: 0 };
         renderPanel();
-        document.getElementById('panel').classList.remove('hidden');
+        $('panel').classList.remove('hidden');
     }
-    function closePanel() {
-        panelOpen = false;
-        document.getElementById('panel').classList.add('hidden');
+    function closeOverlay() {
+        view = 'home';
+        $('panel').classList.add('hidden');
+        $('all').classList.add('hidden');
         renderRow();
     }
 
@@ -310,39 +459,112 @@
     function applyTheme() {
         document.body.className = document.body.className.replace(/theme-\S+/g, '').trim();
         document.body.classList.add('theme-' + state.theme);
-        applyWallpaper();
     }
 
-    // Coloque um arquivo wallpaper.jpg na raiz do projeto para usar como fundo.
-    function applyWallpaper() {
-        var wp = document.getElementById('wallpaper');
-        if (!state.wallpaper) {
-            wp.classList.remove('on'); document.body.classList.remove('has-wallpaper'); return;
-        }
+    function showWallpaper(url, title, credit) {
+        var wp = $('wallpaper');
         var img = new Image();
         img.onload = function () {
-            wp.style.backgroundImage = 'url(wallpaper.jpg)';
-            wp.classList.add('on'); document.body.classList.add('has-wallpaper');
+            wp.style.backgroundImage = 'url("' + url + '")';
+            wp.classList.add('on');
+            $('photo-title').textContent = title || '';
+            $('photo-credit').textContent = credit || '';
         };
-        img.onerror = function () {
-            wp.classList.remove('on'); document.body.classList.remove('has-wallpaper');
-        };
-        img.src = 'wallpaper.jpg';
+        img.onerror = function () { hideWallpaper(); };
+        img.src = url;
+    }
+    function hideWallpaper() {
+        $('wallpaper').classList.remove('on');
+        $('photo-title').textContent = '';
+        $('photo-credit').textContent = '';
     }
 
+    function applyWallpaper() {
+        if (state.wallpaper === 'off') return hideWallpaper();
+        if (state.wallpaper === 'local') return showWallpaper('wallpaper.jpg', '', '');
+
+        // Foto do dia do Bing; guarda a última para funcionar sem internet
+        var cached = cacheGet('wallpaper.bing');
+        if (cached) showWallpaper(cached.url, cached.title, cached.credit);
+        getJSON(BING_URL, function (data) {
+            var im = data.images && data.images[0];
+            if (!im) return;
+            // "Título (© Autor/Agência)" → separa título e crédito
+            var m = /^(.*?)\s*\((©.*)\)\s*$/.exec(im.copyright || '');
+            var info = {
+                url: 'https://www.bing.com' + im.url.replace(/_\d+x\d+\.jpg/, '_1920x1080.jpg'),
+                title: m ? m[1] : (im.title || ''),
+                credit: m ? m[2] : ''
+            };
+            cacheSet('wallpaper.bing', info);
+            if (state.wallpaper === 'bing' && (!cached || cached.url !== info.url)) {
+                showWallpaper(info.url, info.title, info.credit);
+            }
+        }, function () {
+            if (!cached) showWallpaper('wallpaper.jpg', '', '');
+        });
+    }
+
+    // ---------- Clima ----------
+    function renderWeather(data) {
+        var c = data.current, d = data.daily, h = data.hourly;
+        var now = wmo(c.weather_code, c.is_day);
+        $('w-icon').innerHTML = WX_ICON[now.i];
+        $('w-temp').textContent = Math.round(c.temperature_2m);
+        $('w-desc').textContent = now.d;
+        $('w-place').textContent = PLACE.name;
+        $('w-extra').innerHTML = '';
+        [
+            '↑ ' + Math.round(d.temperature_2m_max[0]) + '°  ↓ ' + Math.round(d.temperature_2m_min[0]) + '°  ·  Sensação ' + Math.round(c.apparent_temperature) + '°',
+            'Umidade ' + c.relative_humidity_2m + '%  ·  Chuva ' + (d.precipitation_probability_max[0] || 0) + '%  ·  Vento ' + Math.round(c.wind_speed_10m) + ' km/h'
+        ].forEach(function (line) {
+            var div = document.createElement('div');
+            div.textContent = line;
+            $('w-extra').appendChild(div);
+        });
+
+        // Próximas horas, de 3 em 3
+        var hours = $('w-hours');
+        hours.innerHTML = '';
+        var start = 0;
+        while (start < h.time.length && h.time[start] < c.time) start++;
+        for (var k = 1; k <= 4; k++) {
+            var i = start + k * 3;
+            if (i >= h.time.length) break;
+            var w = wmo(h.weather_code[i], h.is_day[i]);
+            var el = document.createElement('div');
+            el.className = 'w-hour';
+            el.innerHTML = '<div class="h">' + h.time[i].slice(11, 13) + 'h</div>' + WX_ICON[w.i] +
+                '<div class="t">' + Math.round(h.temperature_2m[i]) + '°</div>';
+            hours.appendChild(el);
+        }
+    }
+
+    function loadWeather(manual) {
+        var cached = cacheGet('weather');
+        if (cached && !manual) renderWeather(cached);
+        getJSON(WEATHER_URL, function (data) {
+            cacheSet('weather', data);
+            renderWeather(data);
+            if (manual) toast('Clima atualizado');
+        }, function () {
+            if (!cached) $('w-desc').textContent = 'Sem conexão para o clima';
+            if (manual) toast('Não foi possível atualizar o clima');
+        });
+    }
+
+    // ---------- Relógio e avisos ----------
     function tick() {
         var now = new Date();
         var h = now.getHours(), m = now.getMinutes();
-        document.getElementById('clock').textContent = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+        $('clock').textContent = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
         var date = now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-        document.getElementById('date').textContent = date.charAt(0).toUpperCase() + date.slice(1);
-        document.getElementById('greeting').textContent =
-            h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+        $('date').textContent = date.charAt(0).toUpperCase() + date.slice(1);
     }
 
     var toastTimer;
     function toast(msg) {
-        var t = document.getElementById('toast');
+        var t = $('toast');
         t.textContent = msg;
         t.classList.add('show');
         clearTimeout(toastTimer);
@@ -358,24 +580,29 @@
     }
 
     document.addEventListener('keydown', function (e) {
-        if (panelOpen) panelKey(e.keyCode);
+        if (view === 'panel') panelKey(e.keyCode);
+        else if (view === 'all') allKey(e.keyCode);
         else homeKey(e.keyCode);
     });
 
-    // Recarrega a lista quando o launcher volta ao primeiro plano (app instalado/removido).
+    // Ao voltar para o launcher: recarrega apps (instalados/removidos) e o clima
     document.addEventListener('visibilitychange', function () {
-        if (!document.hidden) loadInstalled(renderRow);
+        if (!document.hidden) { loadInstalled(renderRow); loadWeather(false); }
     });
 
     load();
     applyTheme();
+    applyWallpaper();
     registerKeys();
     tick();
     setInterval(tick, 10000);
+    loadWeather(false);
+    setInterval(function () { loadWeather(false); }, 30 * 60 * 1000);
+    setInterval(applyWallpaper, 6 * 60 * 60 * 1000);
     loadInstalled(function () {
         // Primeira execução: sugere alguns apps comuns, se estiverem instalados.
         if (!state.favorites.length) {
-            var common = /youtube|netflix|globoplay|prime video|disney|max|spotify/i;
+            var common = /youtube|netflix|globoplay|prime video|disney|^max$|spotify/i;
             state.favorites = installed.filter(function (a) { return common.test(a.name); })
                                        .map(function (a) { return a.id; });
             save();

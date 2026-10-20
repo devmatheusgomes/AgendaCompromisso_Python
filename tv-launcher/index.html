@@ -8,19 +8,50 @@
 </head>
 <body class="theme-grafite">
     <div id="wallpaper"></div>
+    <div id="shade"></div>
 
+    <!-- Topo: relógio à esquerda, botões e crédito da foto à direita -->
     <header>
-        <div id="clock">--:--</div>
-        <div id="date"></div>
-        <div id="greeting"></div>
+        <div class="time">
+            <div id="clock">--:--</div>
+            <div id="date"></div>
+        </div>
+        <div class="top-right">
+            <div id="topbar" class="topbar"></div>
+            <div id="photo-title" class="photo-title"></div>
+            <div id="photo-credit" class="photo-credit"></div>
+        </div>
     </header>
 
-    <main>
+    <!-- Widget de clima -->
+    <section id="weather" class="glass weather">
+        <div class="now">
+            <div id="w-icon" class="w-icon"></div>
+            <div>
+                <div class="w-temp"><span id="w-temp">--</span>°</div>
+                <div id="w-desc" class="w-desc">Carregando clima…</div>
+            </div>
+        </div>
+        <div class="w-info">
+            <div id="w-place" class="w-place"></div>
+            <div id="w-extra" class="w-extra"></div>
+        </div>
+        <div id="w-hours" class="w-hours"></div>
+    </section>
+
+    <!-- Faixa de apps -->
+    <main class="glass dock">
         <div id="row" class="row"></div>
-        <div id="hint" class="hint"></div>
+        <div id="label" class="label"></div>
     </main>
 
-    <!-- Painel de personalização -->
+    <!-- Todos os apps -->
+    <section id="all" class="overlay hidden">
+        <h2>Todos os apps</h2>
+        <div id="grid" class="grid"></div>
+    </section>
+
+    <!-- Personalizar -->
     <section id="panel" class="panel hidden">
         <div class="panel-box">
             <h2>Personalizar</h2>
@@ -33,7 +64,7 @@
                 <div id="actions" class="chips"></div>
             </div>
             <div class="panel-section grow">
-                <h3>Apps instalados <small>(OK adiciona / remove da tela inicial)</small></h3>
+                <h3>Apps na faixa <small>(OK adiciona / remove)</small></h3>
                 <div id="apps" class="app-list"></div>
             </div>
         </div>
