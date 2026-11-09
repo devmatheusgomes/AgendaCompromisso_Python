@@ -1,0 +1,1 @@
+/* Adaptação por plataforma. Vazio na Samsung; a versão LG (lg-launcher/) substitui este arquivo. */

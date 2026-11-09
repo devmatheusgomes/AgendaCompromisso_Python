@@ -1,0 +1,12 @@
+{
+    "id": "com.inicio.launcher",
+    "version": "1.0.0",
+    "vendor": "Inicio",
+    "type": "web",
+    "main": "index.html",
+    "title": "Inicio",
+    "icon": "icon.png",
+    "largeIcon": "largeIcon.png",
+    "resolution": "1920x1080",
+    "disableBackHistoryAPI": true
+}

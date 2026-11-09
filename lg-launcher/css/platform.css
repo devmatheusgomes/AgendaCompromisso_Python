@@ -1,0 +1,25 @@
+/*
+ * LG webOS 4.x: o navegador da TV é antigo e não entende "gap" em flexbox,
+ * "inset" nem desfoque de fundo. Aqui o espaçamento é refeito com margens.
+ */
+#wallpaper, #shade, .overlay, .panel { top: 0; left: 0; right: 0; bottom: 0; }
+
+.topbar, .widgets, .weather, .weather .now, .w-hours, .row, .tile,
+.grid, .grid .inner, .chips, .panel-box, .media, .m-btns { gap: 0 !important; }
+
+.topbar > * + *      { margin-left: 26px; }
+.widgets > * + *     { margin-left: 30px; }
+.weather > * + *     { margin-left: 46px; }
+.weather .now > * + * { margin-left: 22px; }
+.w-hours > * + *     { margin-left: 14px; }
+.row .tile           { margin-right: 34px; }
+.grid .inner .tile   { margin: 0 34px 40px 0; }
+.chip                { margin: 0 16px 16px 0; }
+.panel-box > * + *   { margin-top: 40px; }
+.yt-badge            { margin-right: 12px; }
+.tile.generic > * + * { margin-top: 8px; }
+
+/* sem desfoque: fundo mais opaco para manter a leitura */
+.glass   { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(18, 20, 24, .72); }
+.overlay { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(8, 9, 11, .96); }
+.widgets > .media.hidden + * { margin-left: 0; }

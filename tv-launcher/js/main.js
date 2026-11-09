@@ -82,7 +82,10 @@
         [/crunchyroll/i,  { bg: '#f47521', fg: '#fff', text: 'crunchyroll', size: 'sm' }],
         [/pluto/i,        { bg: '#000', fg: '#fff200', text: 'pluto tv', size: 'sm' }],
         [/claro/i,        { bg: '#da291c', fg: '#fff', text: 'Claro tv+', size: 'sm' }],
-        [/internet|browser|navegador/i, { bg: '#1a73e8', fg: '#fff', text: 'Internet', size: 'sm' }]
+        [/internet|browser|navegador/i, { bg: '#1a73e8', fg: '#fff', text: 'Internet', size: 'sm' }],
+        [/^hdmi\s*1$/i, { bg: '#2b2f36', fg: '#fff', text: 'HDMI 1', size: 'sm' }],
+        [/^hdmi\s*2$/i, { bg: '#2b2f36', fg: '#fff', text: 'HDMI 2', size: 'sm' }],
+        [/^hdmi\s*3$/i, { bg: '#2b2f36', fg: '#fff', text: 'HDMI 3', size: 'sm' }]
     ];
 
     var STORE_KEY = 'minilauncher.v2';
@@ -746,9 +749,10 @@
     }
 
     document.addEventListener('keydown', function (e) {
-        if (view === 'panel') panelKey(e.keyCode);
-        else if (view === 'all') allKey(e.keyCode);
-        else homeKey(e.keyCode);
+        var code = e.keyCode === 461 ? KEY.BACK : e.keyCode;   // 461 = Voltar no controle LG
+        if (view === 'panel') panelKey(code);
+        else if (view === 'all') allKey(code);
+        else homeKey(code);
     });
 
     // Ao voltar para o launcher: recarrega apps (instalados/removidos) e o clima
@@ -769,9 +773,22 @@
     loadInstalled(function () {
         // Primeira execução: sugere alguns apps comuns, se estiverem instalados.
         if (!state.favorites.length) {
-            var common = /youtube|netflix|globoplay|prime video|disney|^max$|spotify/i;
-            state.favorites = installed.filter(function (a) { return common.test(a.name); })
-                                       .map(function (a) { return a.id; });
+            var defaults = window.LAUNCHER_DEFAULTS;
+            if (defaults) {
+                // lista ordenada de padrões: um app para cada, na ordem dada
+                defaults.forEach(function (re) {
+                    for (var i = 0; i < installed.length; i++) {
+                        if (re.test(installed[i].name) && state.favorites.indexOf(installed[i].id) < 0) {
+                            state.favorites.push(installed[i].id);
+                            break;
+                        }
+                    }
+                });
+            } else {
+                var common = /youtube|netflix|globoplay|prime video|disney|^max$|spotify/i;
+                state.favorites = installed.filter(function (a) { return common.test(a.name); })
+                                           .map(function (a) { return a.id; });
+            }
             save();
         }
         renderRow();
